@@ -1,1 +1,159 @@
-<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#173642"><title>Table For You</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script defer src="config.js"></script><script defer src="app.js"></script></head><body><header class="top"><button id="menu-toggle" class="menu-toggle secondary" aria-label="Abrir menú de navegación">☰</button><a class="brand" href="#catalogo"><span class="brandmark">♟</span><span>Table <em>For You</em></span></a><span id="session-label" class="muted">Visitante</span><button id="account-button" class="quiet">Acceso</button></header><div class="shell"><aside id="sidebar" class="sidebar"><div class="nav-title">EXPLORAR</div><button data-page="catalogo">▦ Catálogo</button><button data-page="acceso">↪ Acceso</button><div class="nav-title protected">TU ACTIVIDAD</div><button class="protected" data-page="favoritos">♡ Favoritos y valoraciones</button><button class="protected" data-page="recomendaciones">✧ Recomendaciones</button><button class="protected" data-page="quedadas">▣ Quedadas</button><button class="protected" data-page="comunidad">♧ Comunidad y chat</button><button class="protected" data-page="perfil">♙ Perfil</button><button class="protected" data-page="notificaciones">◉ Notificaciones</button><button class="protected" data-page="propuestas">＋ Proponer juego</button><div class="nav-title admin-only">ADMINISTRACIÓN</div><button class="admin-only" data-page="admin">⚙ Panel de administración</button></aside><main id="main" class="main" aria-live="polite"><div class="loading">Cargando aplicación...</div></main></div><nav class="bottom" id="mobile-nav"><button data-page="catalogo">▦<small>Catálogo</small></button><button data-page="quedadas" class="protected">▣<small>Quedadas</small></button><button data-page="favoritos" class="protected">♡<small>Favoritos</small></button><button data-page="recomendaciones" class="protected">✧<small>Ideas</small></button><button data-page="perfil" class="protected">♙<small>Perfil</small></button><button data-page="acceso" class="guest-only">↪<small>Acceso</small></button></nav><div id="toast" role="status" aria-live="polite"></div><dialog id="confirm-dialog"><form method="dialog"><h3 id="confirm-title">Confirmar acción</h3><p id="confirm-text"></p><div class="actions"><button value="cancel" class="secondary">Cancelar</button><button value="ok" class="danger">Confirmar</button></div></form></dialog></body></html>
+
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#173642">
+
+    <title>Table For You</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="styles.css">
+
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script defer src="config.js"></script>
+    <script defer src="app.js"></script>
+</head>
+
+<body>
+
+    <header class="top">
+        <button
+            id="menu-toggle"
+            class="menu-toggle secondary"
+            aria-label="Abrir menú de navegación"
+        >
+            ☰
+        </button>
+
+        <a class="brand" href="#catalogo">
+            <span class="brandmark">♟</span>
+            <span>Table <em>For You</em></span>
+        </a>
+
+        <span id="session-label" class="muted">Visitante</span>
+
+        <button id="account-button" class="quiet">
+            Acceso
+        </button>
+    </header>
+
+    <div class="shell">
+
+        <aside id="sidebar" class="sidebar">
+
+            <div class="nav-title">EXPLORAR</div>
+
+            <button data-page="catalogo">▦ Catálogo</button>
+            <button data-page="acceso">↪ Acceso</button>
+
+            <div class="nav-title protected">TU ACTIVIDAD</div>
+
+            <button class="protected" data-page="favoritos">
+                ♡ Favoritos y valoraciones
+            </button>
+
+            <button class="protected" data-page="recomendaciones">
+                ✧ Recomendaciones
+            </button>
+
+            <button class="protected" data-page="quedadas">
+                ▣ Quedadas
+            </button>
+
+            <button class="protected" data-page="comunidad">
+                ♧ Comunidad y chat
+            </button>
+
+            <button class="protected" data-page="perfil">
+                ♙ Perfil
+            </button>
+
+            <button class="protected" data-page="notificaciones">
+                ◉ Notificaciones
+            </button>
+
+            <button class="protected" data-page="propuestas">
+                ＋ Proponer juego
+            </button>
+
+            <div class="nav-title admin-only">ADMINISTRACIÓN</div>
+
+            <button class="admin-only" data-page="admin">
+                ⚙ Panel de administración
+            </button>
+
+        </aside>
+
+        <main id="main" class="main" aria-live="polite">
+            <div class="loading">Cargando aplicación...</div>
+        </main>
+
+    </div>
+
+    <nav class="bottom" id="mobile-nav">
+
+        <button data-page="catalogo">
+            ▦
+            <small>Catálogo</small>
+        </button>
+
+        <button data-page="quedadas" class="protected">
+            ▣
+            <small>Quedadas</small>
+        </button>
+
+        <button data-page="favoritos" class="protected">
+            ♡
+            <small>Favoritos</small>
+        </button>
+
+        <button data-page="recomendaciones" class="protected">
+            ✧
+            <small>Ideas</small>
+        </button>
+
+        <button data-page="perfil" class="protected">
+            ♙
+            <small>Perfil</small>
+        </button>
+
+        <button data-page="acceso" class="guest-only">
+            ↪
+            <small>Acceso</small>
+        </button>
+
+    </nav>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <dialog id="confirm-dialog">
+        <form method="dialog">
+
+            <h3 id="confirm-title">Confirmar acción</h3>
+
+            <p id="confirm-text"></p>
+
+            <div class="actions">
+                <button value="cancel" class="secondary">
+                    Cancelar
+                </button>
+
+                <button value="ok" class="danger">
+                    Confirmar
+                </button>
+            </div>
+
+        </form>
+    </dialog>
+
+</body>
+</html>
