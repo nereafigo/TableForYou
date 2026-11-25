@@ -29,7 +29,7 @@ function pager(current,size,total,which){const count=Math.max(1,Math.ceil(total/
 function selectGameOptions(games,placeholder='Selecciona un juego'){return `<option value="">${esc(placeholder)}</option>`+games.map(g=>`<option value="${g.id}">${esc(g.name)}${g.yearpublished?` (${esc(g.yearpublished)})`:``}</option>`).join('')}
 function updateNav(){const login=!!state.user,admin=login&&state.profile?.role==='admin';$$('.protected').forEach(e=>e.hidden=!login);$$('.admin-only').forEach(e=>e.hidden=!admin);$$('.guest-only').forEach(e=>e.hidden=login);$('#session-label').textContent=login?`${state.profile?.display_name||state.profile?.username||state.user.email} · ${admin?'Administrador':'Usuario'}`:'Visitante';$('#account-button').textContent=login?'Cerrar sesión':'Iniciar sesión';$$('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===state.page))}
 // GRADIO EXISTENTE (sin modificar el Colab): se reutilizan los eventos de su interfaz.
-// Auth principal: Supabase. El login Gradio solo se mantiene para chat y propuestas legados.
+// Auth del navegador sigue siendo Supabase; el estado de Gradio necesita su propio login
 // por sesión para que Python aplique los permisos del usuario.
 let tfyGradioOperationsAuthenticated=false;
 let tfyGradioOperationClient=null;
@@ -96,7 +96,7 @@ async function searchGames(q='',filters={},page=0,size=10){let query=sb.from('ga
 function gameCard(g){const fav=state.favs.has(g.id);return `<article class="card game">${g.image_url?`<img class="game-cover" src="${esc(g.image_url)}" loading="lazy" alt="Portada de ${esc(g.name)}" onerror="this.style.display='none'">`:'<div class="game-cover"></div>'}<div class="game-body"><div class="row space"><h3>${esc(g.name)}</h3>${badge(g.yearpublished||'Sin año')}</div><div class="meta"><span>♧ ${fmt(g.minplayers)}–${fmt(g.maxplayers)} jugadores</span><span>◷ ${fmt(g.playingtime)} min</span><span>★ ${g.average==null?'Sin valorar':Number(g.average).toFixed(1)+'/10'}</span></div><p class="muted tiny">${esc((g.description||'Sin descripción').slice(0,180))}${g.description?.length>180?'…':''}</p><div class="actions"><button class="primary" data-action="details" data-id="${g.id}">Ver ficha</button>${state.user?`<button class="secondary" data-action="toggle-fav" data-id="${g.id}">${fav?'♥ Quitar favorito':'♡ Añadir favorito'}</button>`:''}</div></div></article>`}
 async function renderCatalog(){const result=await searchGames(state.catQuery,state.catFilters,state.catalogPage,state.catSize);state.catalogResults=result.rows;const search=state.catQuery;$('#main').innerHTML=`${pageTitle('Catálogo de juegos','Busca entre los títulos reales de Supabase. Disponible sin iniciar sesión.')}<div class="card"><form id="catalog-form"><div class="form-grid">${field('q','Buscar por nombre','search',search,'placeholder="CATAN"')}${field('players','Número de jugadores','number',state.catFilters.players||'','min="1"')}${field('duration','Tiempo máximo (min)','number',state.catFilters.duration||'','min="1"')}${field('complexity','Complejidad máxima (0–5)','number',state.catFilters.complexity||'','min="0" max="5" step="0.1"')}${field('category','Categoría', 'text',state.catFilters.category||'')}${dropdown('order','Ordenar por',[['name','Nombre'],['rating','Mejor valoración'],['popular','Más populares'],['year','Más recientes']],state.catFilters.order||'name')}</div><div class="actions"><button class="primary" type="submit">Buscar y filtrar</button><button class="secondary" type="button" data-action="catalog-reset">Restablecer</button><button class="secondary" type="button" data-action="catalog-popular">Juegos populares</button>${dropdown('pageSize','Por página',[[5,'5'],[10,'10'],[20,'20']],state.catSize)}</div></form></div><div class="row space"><h2>${result.count} juegos encontrados</h2><span class="muted">${state.user?'Puedes añadir favoritos':'Inicia sesión para guardar favoritos'}</span></div>${result.rows.length?`<div class="grid">${result.rows.map(gameCard).join('')}</div>${pager(state.catalogPage,state.catSize,result.count,'catalog')}`:empty('No se encontraron juegos. Prueba a retirar algún filtro.')}`}
 async function renderDetails(id){const g=assert(await sb.from('games').select('*').eq('id',id).single());state.selectedGame=g;let own=null;let reviews=[];if(state.user){const r=await sb.from('game_ratings').select('score,review').eq('user_id',state.user.id).eq('game_id',id).maybeSingle();own=assert(r)}const rr=await sb.from('game_ratings').select('score,review,created_at').eq('game_id',id).order('created_at',{ascending:false}).limit(6);if(!rr.error)reviews=rr.data;$('#main').innerHTML=`<button class="secondary" data-page="catalogo">Volver al catálogo</button><div class="card"><div class="cols2"><div>${g.image_url?`<img class="game-cover" style="height:250px;border-radius:13px" src="${esc(g.image_url)}" alt="Portada">`:empty('Sin portada')}</div><div><span class="eyebrow">FICHA DEL JUEGO</span><h1>${esc(g.name)}</h1><p>${esc(g.description||'Sin descripción')}</p><div class="meta"><span class="chip">Año: ${fmt(g.yearpublished)}</span><span class="chip">Jugadores: ${fmt(g.minplayers)}–${fmt(g.maxplayers)}</span><span class="chip">Duración: ${fmt(g.playingtime)} min</span><span class="chip">Edad: ${fmt(g.minage)}+</span><span class="chip">Complejidad: ${fmt(g.averageweight)}/5</span><span class="chip">★ ${fmt(g.average)}/10 · ${fmt(g.usersrated)} votos</span></div><p class="tiny">Categorías: ${esc(g.boardgamecategory||'—')}</p><p class="tiny">Mecánicas: ${esc(g.boardgamemechanic||'—')}</p>${state.user?`<button class="secondary" data-action="toggle-fav" data-id="${g.id}">${state.favs.has(g.id)?'♥ Quitar favorito':'♡ Añadir favorito'}</button>`:''}</div></div></div>${state.user?`<div class="card"><h2>Tu valoración (1–10)</h2><form id="detail-rating-form"><input type="hidden" name="game_id" value="${g.id}">${dropdown('score','Puntuación',Array.from({length:10},(_,i)=>[i+1,String(i+1)]),own?.score||8)}${area('review','Reseña opcional',own?.review||'')}<button class="primary">${own?'Actualizar':'Guardar'} valoración</button><button type="button" class="secondary" data-action="delete-rating" data-id="${g.id}">Eliminar mi valoración</button></form></div>`:''}<div class="card"><h2>Reseñas recientes</h2>${reviews.length?reviews.map(r=>`<div class="list-item">★ ${r.score}/10 · ${esc(r.review||'Sin comentario')}</div>`).join(''):empty('Sin reseñas de usuarios de Table For You')}</div>`}
-async function renderAccess(){const authed=!!state.user;$('#main').innerHTML=pageTitle('Acceso','Regístrate, inicia sesión o cierra tu sesión de forma segura.')+(authed?`<div class="card"><h2>Sesión iniciada</h2><p>${esc(state.user.email)} · ${esc(state.profile?.username)}</p>${!tfyGradioOperationsAuthenticated?`<p class="help">Las recomendaciones personales usan automáticamente tu sesión de Supabase. Para chat y propuestas de Gradio puedes activar la sesión adicional.</p><form id="gradio-login-form">${field('email','Correo electrónico','email',state.user.email,'required')}${field('password','Contraseña','password','','required')}<button class="primary">Activar chat y propuestas en Gradio</button></form>`:'<p class="help">Chat y propuestas de Gradio activados.</p>'}<button class="danger" data-action="logout">Cerrar sesión y limpiar datos</button></div>`:`<div class="cols2"><div class="card"><h2>Iniciar sesión</h2><form id="login-form">${field('email','Correo electrónico','email','','required autocomplete="email"')}${field('password','Contraseña','password','','required autocomplete="current-password"')}<button class="primary">Entrar</button></form></div><div class="card"><h2>Crear cuenta</h2><form id="signup-form">${field('username','Nombre de usuario','text','','required minlength="3" maxlength="40"')}${field('email','Correo electrónico','email','','required')}${field('password','Contraseña','password','','required minlength="8"')}<button class="primary">Registrarme</button></form><p class="help">Recibirás confirmación según la configuración de Supabase Auth.</p></div></div>`)}
+async function renderAccess(){const authed=!!state.user;$('#main').innerHTML=pageTitle('Acceso','Regístrate, inicia sesión o cierra tu sesión de forma segura.')+(authed?`<div class="card"><h2>Sesión iniciada</h2><p>${esc(state.user.email)} · ${esc(state.profile?.username)}</p>${!tfyGradioOperationsAuthenticated?`<p class="help">Gradio necesita revalidar tu sesión después de recargar la página.</p><form id="gradio-login-form">${field('email','Correo electrónico','email',state.user.email,'required')}${field('password','Contraseña','password','','required')}<button class="primary">Activar operaciones en Gradio</button></form>`:'<p class="help">Gradio conectado con esta sesión.</p>'}<button class="danger" data-action="logout">Cerrar sesión y limpiar datos</button></div>`:`<div class="cols2"><div class="card"><h2>Iniciar sesión</h2><form id="login-form">${field('email','Correo electrónico','email','','required autocomplete="email"')}${field('password','Contraseña','password','','required autocomplete="current-password"')}<button class="primary">Entrar</button></form></div><div class="card"><h2>Crear cuenta</h2><form id="signup-form">${field('username','Nombre de usuario','text','','required minlength="3" maxlength="40"')}${field('email','Correo electrónico','email','','required')}${field('password','Contraseña','password','','required minlength="8"')}<button class="primary">Registrarme</button></form><p class="help">Recibirás confirmación según la configuración de Supabase Auth.</p></div></div>`)}
 async function favoriteToggle(id){
   checkLogin();
   if(state.favs.has(id))assert(await sb.from('favorites').delete().eq('user_id',state.user.id).eq('game_id',id));
@@ -122,64 +122,42 @@ async function removeRating(id){
 async function renderFavorites(){checkLogin();await loadFavoriteIds();const {data:items,error,count}=await sb.from('favorites').select('game_id,created_at,games(id,name,average,minplayers,maxplayers,playingtime)',{count:'exact'}).eq('user_id',state.user.id).order('created_at',{ascending:false}).range(state.favPage*state.favSize,state.favPage*state.favSize+state.favSize-1);if(error)throw error;const saved=items||[];$('#main').innerHTML=`${pageTitle('Favoritos y valoraciones','Tus juegos guardados y valoraciones, con datos persistentes.')}<div class="card"><h2>Mis favoritos (${count||0})</h2>${dropdown('favSize','Mostrar por página',[[5,'5'],[10,'10'],[20,'20']],state.favSize)}<div id="fav-list">${saved.length?saved.map(f=>`<label class="list-item row"><input class="fav-check" type="checkbox" value="${f.game_id}" style="width:auto"><span><strong>${esc(f.games?.name||'Juego no disponible')}</strong><span class="muted tiny">★ ${fmt(f.games?.average)} · ${fmt(f.games?.playingtime)} min</span></span><button type="button" class="quiet" data-action="details" data-id="${f.game_id}">Ficha</button></label>`).join(''):empty('Aún no has añadido ningún favorito')}</div>${pager(state.favPage,state.favSize,count||0,'fav')}<button class="danger" data-action="bulk-remove-fav">Eliminar seleccionados</button></div><div class="card"><h2>Valorar cualquier juego</h2><form id="search-rating-form"><div class="row">${field('gameName','Buscar juego por nombre','search','','required placeholder="CATAN"')}<button class="secondary">Buscar</button></div></form><div id="rating-picker"></div></div><div class="card"><h2>Mis valoraciones</h2><div id="my-ratings">${empty('Cargando...')}</div></div>`;const r=await sb.from('game_ratings').select('game_id,score,review,created_at,games(name)').eq('user_id',state.user.id).order('created_at',{ascending:false}).limit(100);$('#my-ratings').innerHTML=r.error?esc(errorMessage(r.error)):(r.data.length?r.data.map(v=>`<div class="list-item row space"><span><strong>${esc(v.games?.name)}</strong>★ ${v.score}/10 · ${esc((v.review||'').slice(0,120))}</span><div class="actions"><button class="secondary" data-action="details" data-id="${v.game_id}">Editar</button><button class="quiet" data-action="delete-rating" data-id="${v.game_id}">Eliminar</button></div></div>`).join(''):empty('Todavía no has valorado juegos'))}
 async function renderRecommendations(){checkLogin();$('#main').innerHTML=`${pageTitle('Recomendaciones','Resultados reales según el contexto, el historial y las características del catálogo.')}<div class="card"><h2>Según tu contexto</h2><form id="context-form"><div class="form-grid">${field('players','Nº de jugadores','number','4','required min="1"')}${field('minutes','Tiempo disponible (min)','number','90','required min="1"')}${dropdown('level','Experiencia',[['beginner','Principiante'],['intermediate','Intermedio'],['expert','Experto']],'intermediate')}</div><button class="primary">Buscar juegos compatibles</button></form></div><div class="card"><h2>Juegos similares</h2><form id="similar-form" class="row">${field('q','Buscar un juego','search','','required placeholder="CATAN"')}<button class="secondary">Buscar similares</button></form></div><div class="card">${dropdown('recSize','Resultados por página',[[5,'5'],[10,'10'],[20,'20']],state.recSize)}<div class="row"><button class="secondary" data-action="rec-popular">Más populares</button><button class="secondary" data-action="rec-personal">Personalizadas según mis favoritos</button></div><div id="rec-results" class="grid" style="margin-top:12px">${empty('Elige una modalidad para obtener resultados')}</div></div>`}
 async function recResults(games){state.lastRecommendations=Array.isArray(games)?games:[];$('#rec-results').innerHTML=state.lastRecommendations.length?state.lastRecommendations.slice(0,state.recSize).map(gameCard).join(''):empty('No se encontraron juegos compatibles')}
-// Recomendaciones personales con JWT validado en Python; similares TF-IDF de Gradio.
-// Los datos finales para las tarjetas se obtienen de Supabase.
+// Recomendador en Gradio. Las mutaciones compatibles usan otros eventos Gradio
+// declarados al principio. Las lecturas de objetos siguen en Supabase porque el
+// Gradio original expone muchas tablas como HTML, no como datos JSON estructurados.
 let tfyGradioClient=null;
 let tfyGradioUrl=null;
 async function tfyCallGradio(mode, ids, limit=10){
-  // La sesión de Supabase es la única necesaria para recomendaciones personales.
-  // El backend debe PUBLICAR /tfy_recomendar_token y validar el JWT allí.
-  checkLogin();
+  // El Gradio original de la fase 17 NO publica /tfy_recomendar.
+  // Publica /lambda_1 (similar) y /lambda_3 (personalizada), ambos HTML.
+  // Reutiliza el mismo Client que recibe el login de la interfaz Gradio.
+  if(!tfyGradioOperationsAuthenticated)
+    throw Error('Para usar recomendaciones Python debes activar Gradio desde Acceso después de iniciar sesión.');
   const client=await tfyGradioOperations();
   const size=[5,10,20].includes(+limit)?+limit:10;
-  let names=[];
-
+  let response;
   if(mode==='personalized'){
-    const {data:{session},error}=await sb.auth.getSession();
-    if(error)throw error;
-    if(!session?.access_token)throw Error('Tu sesión ha caducado. Inicia sesión en Supabase.');
-    // No registrar jamás el token en consola, mensajes ni URL.
-    let response;
-    try{
-      response=await client.predict('/tfy_recomendar_token',[
-        session.access_token,size,0,0,0
-      ]);
-    }catch(e){
-      // No incorporar la excepción sin depurar: puede contener datos del request.
-      throw Error('El endpoint /tfy_recomendar_token no está disponible o ha fallado. Comprueba que la celda nueva del Colab se ejecutó y que config.js tiene su URL actual.');
-    }
-    const payload=response?.data?.[0];
-    if(!payload||typeof payload!=='object')
-      throw Error('El recomendador devolvió una respuesta no válida.');
-    if(payload.ok!==true)throw Error(String(payload.error||'El recomendador no pudo calcular resultados.'));
-    if(payload.mensaje&&!payload.items?.length){toast(String(payload.mensaje));return []}
-    if(!Array.isArray(payload.items))throw Error('El recomendador no devolvió la lista items.');
-    names=payload.items.map(x=>String(x?.name||x?.Juego||'').trim()).filter(Boolean).slice(0,size);
-  }else if(mode==='similar'){
-    // TF-IDF público original. No requiere la segunda sesión Gradio.
+    response=await client.predict('/lambda_3',{});
+  } else if(mode==='similar') {
     const item=assert(await sb.from('games').select('id,name').eq('id',Number(ids[0])).single());
-    const response=await client.predict('/lambda_1',{name:`${item.name} [ID ${item.id}]`,n:size});
-    const htmlText=String(response?.data?.[0]||'');
-    const dom=new DOMParser().parseFromString(htmlText,'text/html');
-    const err=dom.querySelector('.tfy-error');
-    if(err)throw Error(err.textContent.trim());
-    const table=dom.querySelector('table');
-    if(!table)throw Error(dom.body.textContent.trim()||'El Gradio no devolvió resultados tabulares');
-    const headers=[...table.querySelectorAll('thead th')].map(e=>e.textContent.trim().toLowerCase());
-    const col=headers.indexOf('juego');
-    if(col<0)throw Error('Gradio devolvió una tabla sin columna Juego');
-    names=[...table.querySelectorAll('tbody tr')].map(tr=>tr.querySelectorAll('td')[col]?.textContent.trim()).filter(Boolean).slice(0,size);
-  }else return null;
-
+    response=await client.predict('/lambda_1',{name:`${item.name} [ID ${item.id}]`,n:size});
+  } else return null;
+  const htmlText=String(response?.data?.[0]||'');
+  const dom=new DOMParser().parseFromString(htmlText,'text/html');
+  const err=dom.querySelector('.tfy-error');
+  if(err)throw Error(err.textContent.trim());
+  const table=dom.querySelector('table');
+  if(!table)throw Error(dom.body.textContent.trim()||'El Gradio no devolvió resultados tabulares');
+  const headers=[...table.querySelectorAll('thead th')].map(e=>e.textContent.trim().toLowerCase());
+  const col=headers.indexOf('juego');
+  if(col<0)throw Error('Gradio devolvió una tabla sin columna Juego');
+  const names=[...table.querySelectorAll('tbody tr')].map(tr=>tr.querySelectorAll('td')[col]?.textContent.trim()).filter(Boolean).slice(0,size);
   if(!names.length)return [];
-  // La API devuelve nombres; las tarjetas reales (ID, portada, estadísticas)
-  // se obtienen de Supabase para preservar el diseño original.
-  const found=assert(await sb.from('games')
-    .select('id,name,description,yearpublished,minplayers,maxplayers,playingtime,average,usersrated,averageweight,image_url,boardgamecategory,is_active')
-    .in('name',names).eq('is_active',true));
+  const found=assert(await sb.from('games').select('id,name,description,yearpublished,minplayers,maxplayers,playingtime,average,usersrated,averageweight,image_url,boardgamecategory,is_active').in('name',names).eq('is_active',true));
   const byName=new Map(found.map(g=>[g.name,g]));
   return names.map(n=>byName.get(n)).filter(Boolean);
 }
+
 async function modelRecommendations(endpoint){
   // Adaptador de compatibilidad de las llamadas originales del HTML.
   const [pathname,query='']=endpoint.split('?');
@@ -216,7 +194,7 @@ async function rpc(name,args){
 }
 
 async function handleSubmit(e){const form=e.target;if(!form.id&&!form.classList.contains('review-proposal-form'))return;e.preventDefault();await withError(async()=>{const v=formData(form);switch(form.id||'review-proposal-form'){
-case 'login-form':{const r=await sb.auth.signInWithPassword({email:v.email.trim(),password:v.password});assert(r);await loadIdentity();toast('Sesión iniciada correctamente');await navigate('catalogo');break}
+case 'login-form':{const r=await sb.auth.signInWithPassword({email:v.email.trim(),password:v.password});assert(r);await loadIdentity();try{await tfyGradioLogin(v.email.trim(),v.password)}catch(e){console.warn('Gradio pendiente de activar:',e)}toast('Sesión iniciada correctamente');await navigate('catalogo');break}
 case 'gradio-login-form':{if(!state.user||v.email.trim().toLowerCase()!==state.user.email?.toLowerCase())throw Error('El correo debe ser el de tu sesión actual');await tfyGradioLogin(v.email.trim(),v.password);toast('Operaciones de Gradio activadas');await navigate('acceso');break}
 case 'signup-form':{if(v.username.trim().length<3)throw Error('El nombre de usuario necesita al menos 3 caracteres');assert(await sb.auth.signUp({email:v.email.trim(),password:v.password,options:{data:{username:v.username.trim()}}}));toast('Registro solicitado. Comprueba si Supabase exige confirmación por correo.');await loadIdentity();await navigate(state.user?'catalogo':'acceso');break}
 case 'catalog-form':{state.catQuery=v.q.trim();state.catFilters={players:v.players,duration:v.duration,complexity:v.complexity,category:v.category,order:v.order};state.catSize=+v.pageSize||10;state.catalogPage=0;await navigate('catalogo');break}
