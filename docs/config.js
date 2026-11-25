@@ -1,4 +1,7 @@
-/* Solo se configura el enlace temporal de Gradio. No incluir claves secretas. */
+/* Clave PUBLICABLE. No incluir jamás sb_secret_, service_role ni contraseñas aquí. */
 window.TFY_CONFIG = Object.freeze({
-  gradioApiUrl: 'https://10cfb4f5dc65430710.gradio.live'
+  supabaseUrl: 'https://dagarcpcxogmodeqnvot.supabase.co',
+  supabasePublishableKey: 'sb_publishable_fVDk3BIQl8l5Fd8KR0ihBg_eevPD21S',
+  gradioApiUrl: 'https://PEGA_TU_ENLACE.gradio.live' // PEGA AQUÍ https://10cfb4f5dc65430710.gradio.live cuando ejecutes la FASE 25.1
+  //gradioApiUrl: 'https://85e4f3303e0e0ae1d1.gradio.live' // Version vieja
 });
